@@ -30,9 +30,7 @@ function filterFollowersLinks(links: (string | null)[]) {
   const removedUnnecessaryLinks = removedNullLinks.filter(
     (link) => !link.endsWith('/request')
   );
-  const removedDuplicatedLinks = [
-    ...new Set(removedUnnecessaryLinks.filter(Boolean)),
-  ];
+  const removedDuplicatedLinks = [...new Set(removedUnnecessaryLinks)];
   return removedDuplicatedLinks;
 }
 
@@ -86,22 +84,15 @@ async function getFollowers() {
   await page.click('button[type="submit"]');
 
   // Go to followers page
+  await page.waitForSelector('button div[title]');
   await page.click('button div[title]');
   await page.click('a[href^="/en/users/"][href$="following"]');
 
   let public_followers = await getFollowersIds(page);
-  console.log(
-    '🚀 ~ file: index.ts:93 ~ getFollowers ~ public_followers:',
-    public_followers.length
-  );
 
   await page.getByText('Private', { exact: true }).click();
 
   let private_followers = await getFollowersIds(page);
-  console.log(
-    '🚀 ~ file: index.ts:98 ~ getFollowers ~ private_followers:',
-    private_followers.length
-  );
 
   public_followers = [...new Set(public_followers)];
   private_followers = [...new Set(private_followers)];
@@ -146,7 +137,7 @@ async function addFollowers() {
   await page.fill('input[type="password"]', env.NEW_ACCOUNT_PASSWORD);
   await page.click('button[type="submit"]');
 
-  await page.waitForTimeout(5000);
+  await page.waitForSelector('button div[title]');
 
   // Go to following user page
   if (!done.public) {
@@ -158,7 +149,8 @@ async function addFollowers() {
         exact: true,
       });
       if (await followButton.isVisible()) {
-        followButton.click();
+        await followButton.click();
+        await page.waitForTimeout(5000);
       }
     }
     if (env.GENERATE_BACKUP_FILE) {
@@ -198,6 +190,7 @@ async function addFollowers() {
       const lastChild = await parent.evaluateHandle((p) => p.lastElementChild);
       await lastChild.click();
       await page.getByText('Follow privately').click();
+      await page.waitForTimeout(5000);
     }
     if (env.GENERATE_BACKUP_FILE) {
       await outputFile(
